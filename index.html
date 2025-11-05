@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Iron Resolve — Rooms Prototype</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="game" width="960" height="540"></canvas>
+  </div>
+  <div id="hud">
+    <div class="left">
+      <div class="pill" id="hearts">❤❤❤❤❤</div>
+      <div class="pill ammo" id="ammo">6 / 6</div>
+      <div class="pill level" id="level">Floor 1 — Start</div>
+      <div class="pill" id="score">Score 0</div>
+      <div class="reloadBar"><div id="reloadFill"></div></div>
+    </div>
+    <div class="pill">Iron Resolve — Rooms Prototype</div>
+  </div>
+  <div id="overlay" hidden>
+    <div class="card">
+      <h1 id="title">Iron Resolve</h1>
+      <p id="subtitle" class="muted">Now with Isaac‑style rooms, treasure, bosses, minimap, colored doors, and basic synergies.</p>
+      <div class="row muted">
+        <div><b>Move:</b> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div>
+        <div><b>Aim:</b> Mouse <i>or</i> <b>Shoot with Arrows</b> (<kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>)</div>
+        <div><b>Shoot:</b> <kbd>Mouse 1</kbd> or hold Arrow keys</div>
+        <div><b>Dodge Roll:</b> <kbd>Space</kbd></div>
+        <div><b>Reload:</b> <kbd>R</kbd> (auto after 6)</div>
+        <div><b>Restart:</b> <kbd>Enter</kbd></div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button id="startBtn">Start Run</button>
+        <button id="restartBtn" hidden>Quick Resolve (Restart)</button>
+      </div>
+      <p class="muted" style="margin-top:8px">Each floor: find the <b>Boss Room</b> (red), defeat the boss to descend. Treasure rooms (yellow, 1–2/floor) grant named items with synergies.</p>
+    </div>
+  </div>
+
+  <!-- Load the game as an ES module so imports inside main.js work -->
+  <script type="module" src="./main.js"></script>
+
+  <noscript>
+    <div style="position:fixed;left:0;top:0;right:0;background:#222;color:#fff;padding:10px;text-align:center;">
+      This game requires JavaScript. Please enable JavaScript to play.
+    </div>
+  </noscript>
+</body>
+</html>

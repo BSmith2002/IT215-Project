@@ -1,0 +1,13 @@
+{
+    "name": "my-project",
+    "version": "1.0.0",
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+    },
+    "dependencies": {
+        "i": "^0.3.7"
+    }
+}
