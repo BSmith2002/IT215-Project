@@ -8,17 +8,27 @@
 </head>
 <body>
   <div id="wrap">
-    <canvas id="game" width="960" height="540"></canvas>
+    <canvas id="game" width="1200" height="675"></canvas>
   </div>
   <div id="hud">
-    <div class="left">
-      <div class="pill" id="hearts">❤❤❤❤❤</div>
-      <div class="pill ammo" id="ammo">6 / 6</div>
+    <div class="topLeft">
+      <div class="topLeftRow">
+        <div class="pill" id="hearts">❤❤❤❤❤</div>
+        <div class="pill" id="score">Score 0</div>
+      </div>
+      <div id="itemList">
+        <div class="itemListHeader">Items</div>
+        <div id="itemListContent"></div>
+      </div>
+    </div>
+    <div class="topRight">
       <div class="pill level" id="level">Floor 1 — Start</div>
-      <div class="pill" id="score">Score 0</div>
+      <canvas id="minimap" width="160" height="160"></canvas>
+    </div>
+    <div class="bottomLeft">
+      <div class="pill ammo" id="ammo">6 / 6</div>
       <div class="reloadBar"><div id="reloadFill"></div></div>
     </div>
-    <div class="pill">Iron Resolve — Rooms Prototype</div>
   </div>
   <div id="overlay" hidden>
     <div class="card">

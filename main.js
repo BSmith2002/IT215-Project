@@ -18,12 +18,15 @@ import { makeEnemy, spawnCombatWave, spawnBoss, explode, onEnemyDie } from './en
   // ===== Canvas & HUD =====
   const canvas = document.getElementById('game');
   const cx = canvas.getContext('2d');
+  const minimapCanvas = document.getElementById('minimap');
+  const minimapCx = minimapCanvas.getContext('2d');
   const HUD = {
     hearts: document.getElementById('hearts'),
     ammo: document.getElementById('ammo'),
     level: document.getElementById('level'),
     score: document.getElementById('score'),
     reloadFill: document.getElementById('reloadFill'),
+    itemListContent: document.getElementById('itemListContent'),
   };
   const overlay = document.getElementById('overlay');
   const startBtn = document.getElementById('startBtn');
@@ -36,21 +39,21 @@ import { makeEnemy, spawnCombatWave, spawnBoss, explode, onEnemyDie } from './en
   // Place files in /assets/ with these names (change paths if you like).
   const Assets = {
     paths: {
-      player:  '/assets/knight.png',
-      ghoul:   '/assets/zombie.png',
-      archer:  '/assets/archer.png',
-      turret:  '/assets/slime.png',
-      charger: '/assets/charger.png',
-      warlock: '/assets/warlock.png',
-      sniper:  '/assets/sniper.png',
-      bomber:  '/assets/bomber.png',
-      boss:    '/assets/boss.png',
+      player:  './assets/knight.png',
+      ghoul:   './assets/ghoul.png',
+      archer:  './assets/skeleton.png',
+      turret:  './assets/slime.png',
+      charger: './assets/charger.png',
+      warlock: './assets/warlock.png',
+      sniper:  './assets/sniper.png',
+      bomber:  './assets/bomber.png',
+      boss:    './assets/boss.png',
       // Optional UI pickups (only if you add the files):
-      heart:   '/assets/heart.png',
-      item:    '/assets/item.png',
-      stairs:  '/assets/stairs.png',
+      heart:   './assets/heart.png',
+      item:    './assets/item.png',
+      stairs:  './assets/stairs.png',
       // Optional projectile:
-      bullet:  '/assets/bullet.png',
+      bullet:  './assets/bullet.png',
     },
     images: {}, ready: false
   };
@@ -90,9 +93,9 @@ import { makeEnemy, spawnCombatWave, spawnBoss, explode, onEnemyDie } from './en
   initControls(canvas, state);
 
   // ===== World/Rooms =====
-  const ROOM_W = 860, ROOM_H = 460;
+  const ROOM_W = 1000, ROOM_H = 580;
   const ROOM_ORIGIN = {x:(canvas.width-ROOM_W)/2, y:(canvas.height-ROOM_H)/2};
-  const DOOR_W = 80, DOOR_H = 20;
+  const DOOR_W = 100, DOOR_H = 25;
   const MAX_FLOORS = 15;
 
   const RT = { START:'start', COMBAT:'combat', TREASURE:'treasure', BOSS:'boss' };
@@ -173,12 +176,13 @@ import { makeEnemy, spawnCombatWave, spawnBoss, explode, onEnemyDie } from './en
   // ===== Player & Items =====
   function makePlayer(x,y){
     return {
-      type:'player', x,y, r:13, speed:2.6,
+      type:'player', x,y, r:20, speed:2.6,
       vx:0, vy:0,
       hearts:5, maxHearts:5,
       invuln:0,
       rollCD:0, rolling:0,
       angle:0,
+      rollAngle:0,
       clipSize:6, ammo:6, reloadTime:520, reloading:0,
       fireCD:0, fireDelay:140, bulletSpeed:6.0, bulletSpread:0.05,
       items:[],
@@ -249,11 +253,22 @@ import { makeEnemy, spawnCombatWave, spawnBoss, explode, onEnemyDie } from './en
     let mag = Math.hypot(ix, iy); let vx=0, vy=0; if(mag>0){ vx = (ix/mag) * p.speed; vy = (iy/mag) * p.speed; }
 
     if(p.rollCD>0) p.rollCD -= dt;
-    if(p.rolling>0){ p.rolling -= dt; p.invuln = 50; p.x += Math.cos(p.angle) * 4.0; p.y += Math.sin(p.angle) * 4.0; } else { p.x += vx; p.y += vy; }
+    if(p.rolling>0){ p.rolling -= dt; p.invuln = p.rolling; p.x += Math.cos(p.rollAngle) * 6.5; p.y += Math.sin(p.rollAngle) * 6.5; } else { p.x += vx; p.y += vy; }
 
     confineToRoom(p);
 
-    if(input.roll && p.rollCD<=0 && p.rolling<=0){ p.rolling = 260; p.rollCD = 900; p.invuln=180; }
+    if(input.roll && p.rollCD<=0 && p.rolling<=0){ 
+      p.rolling = 320; 
+      p.rollCD = 900; 
+      p.invuln=320; 
+      // Store the direction of movement for the roll
+      if(mag > 0) {
+        p.rollAngle = Math.atan2(iy, ix);
+      } else {
+        // If not moving, roll in the direction you're aiming
+        p.rollAngle = p.angle;
+      }
+    }
     if(p.invuln>0) p.invuln -= dt; if(p.fireCD>0) p.fireCD -= dt;
 
     if(p.reloading>0){ p.reloading -= dt; const pct = 1 - clamp(p.reloading / p.reloadTime, 0,1); if(HUD.reloadFill) HUD.reloadFill.style.width=(pct*100).toFixed(0)+'%'; if(p.reloading<=0){ p.ammo = p.clipSize; } }
@@ -395,22 +410,28 @@ import { makeEnemy, spawnCombatWave, spawnBoss, explode, onEnemyDie } from './en
 
     // enemies (sprite if available, else circle)
     for(const e of state.entities){
+      // Calculate angle from enemy to player (opposite direction to face the player)
       const angleToPlayer = state.player ? Math.atan2(state.player.y-e.y, state.player.x-e.x) : 0;
-      const used = drawSprite(e.sprite || e.etype, e.x, e.y, e.r, angleToPlayer);
+      // Flip sprite if facing left (sprites face right by default, flip at PI/2 to PI*1.5)
+      const shouldFlip = angleToPlayer > Math.PI/2 || angleToPlayer < -Math.PI/2;
+      const displayAngle = shouldFlip ? angleToPlayer + Math.PI : angleToPlayer;
+      
+      const used = drawSprite(e.sprite || e.etype, e.x, e.y, e.r, displayAngle);
       if(!used){
         // fallback vector
         cx.save(); cx.translate(e.x,e.y);
         let color = e.etype==='boss'? '#f06c6c' : e.etype==='turret'? '#a48df2' : e.etype==='archer'||e.etype==='sniper'? '#87c1ff' : e.etype==='warlock'? '#ffb86b' : e.etype==='bomber'? '#ffd263' : '#c7d2e0'; if(e.elite){ color = '#ff6b81'; }
         cx.fillStyle=color; cx.beginPath(); cx.arc(0,0,e.r,0,TWO_PI); cx.fill();
         cx.restore();
+        
+        // hp ring (only show for vector fallback enemies without sprites)
+        cx.save();
+        cx.translate(e.x,e.y);
+        cx.strokeStyle='#2b394d'; cx.lineWidth=4; cx.beginPath(); cx.arc(0,0,e.r+5,0,TWO_PI); cx.stroke();
+        const baseMax = (e.etype==='boss')?(80+state.floor*20): (e.etype==='turret'?(4+Math.floor(state.floor/1.5)):(e.etype==='archer'||e.etype==='sniper'?(3+Math.floor(state.floor/2)):(e.etype==='warlock'? (5+Math.floor(state.floor/2)) : (2+Math.floor(state.floor/2)))));
+        const hpPct=clamp(e.hp/baseMax,0,1); cx.strokeStyle='#a1cdfc'; cx.beginPath(); cx.arc(0,0,e.r+5,-Math.PI/2,-Math.PI/2 + hpPct*TWO_PI); cx.stroke();
+        cx.restore();
       }
-      // hp ring (keep UI ring even with sprites)
-      cx.save();
-      cx.translate(e.x,e.y);
-      cx.strokeStyle='#2b394d'; cx.lineWidth=4; cx.beginPath(); cx.arc(0,0,e.r+5,0,TWO_PI); cx.stroke();
-      const baseMax = (e.etype==='boss')?(80+state.floor*20): (e.etype==='turret'?(4+Math.floor(state.floor/1.5)):(e.etype==='archer'||e.etype==='sniper'?(3+Math.floor(state.floor/2)):(e.etype==='warlock'? (5+Math.floor(state.floor/2)) : (2+Math.floor(state.floor/2)))));
-      const hpPct=clamp(e.hp/baseMax,0,1); cx.strokeStyle='#a1cdfc'; cx.beginPath(); cx.arc(0,0,e.r+5,-Math.PI/2,-Math.PI/2 + hpPct*TWO_PI); cx.stroke();
-      cx.restore();
     }
 
     // enemy bullets
@@ -420,12 +441,21 @@ import { makeEnemy, spawnCombatWave, spawnBoss, explode, onEnemyDie } from './en
 
     // player
     const p = state.player; if(p){
+      cx.save();
+      // Fading animation during dash
+      if(p.rolling > 0) {
+        // Create a pulsing fade effect during the roll
+        const rollProgress = 1 - (p.rolling / 320);
+        cx.globalAlpha = 0.3 + 0.4 * Math.abs(Math.sin(rollProgress * Math.PI * 4));
+      }
+      
       // Draw sprite aligned to aim direction
       if(!drawSprite(p.sprite || 'player', p.x, p.y, p.r, p.angle)){
         // fallback vector player
-        cx.save(); cx.translate(p.x,p.y); if(p.invuln>0){ cx.globalAlpha = 0.6 + 0.4*Math.sin(state.time*0.02); }
-        cx.fillStyle = '#e8eef7'; cx.beginPath(); cx.arc(0,0,p.r,0,TWO_PI); cx.fill(); cx.strokeStyle = '#0b0f15'; cx.lineWidth = 3; cx.beginPath(); cx.arc(0,0,p.r-4, p.angle-0.4, p.angle+0.4); cx.stroke(); cx.save(); cx.rotate(p.angle); cx.fillStyle = '#a1cdfc'; cx.fillRect(8,-2, 14,4); cx.restore(); cx.restore();
+        cx.translate(p.x,p.y); if(p.invuln>0 && p.rolling<=0){ cx.globalAlpha = 0.6 + 0.4*Math.sin(state.time*0.02); }
+        cx.fillStyle = '#e8eef7'; cx.beginPath(); cx.arc(0,0,p.r,0,TWO_PI); cx.fill(); cx.strokeStyle = '#0b0f15'; cx.lineWidth = 3; cx.beginPath(); cx.arc(0,0,p.r-4, p.angle-0.4, p.angle+0.4); cx.stroke(); cx.save(); cx.rotate(p.angle); cx.fillStyle = '#a1cdfc'; cx.fillRect(8,-2, 14,4); cx.restore();
       }
+      cx.restore();
     }
 
     // beams
@@ -493,18 +523,53 @@ import { makeEnemy, spawnCombatWave, spawnBoss, explode, onEnemyDie } from './en
   }
 
   function drawMiniMap(){
-    if(!state.map) return; const cellSize=9, pad=6; const mapW=state.map.W*cellSize, mapH=state.map.H*cellSize; const x = canvas.width - mapW - pad - 10; const y = 10;
-    cx.save(); cx.globalAlpha=0.9; cx.fillStyle='#0f1620cc'; cx.strokeStyle='#243142'; cx.lineWidth=2; cx.fillRect(x-6,y-6,mapW+12,mapH+12); cx.strokeRect(x-6,y-6,mapW+12,mapH+12);
+    if(!state.map || !state.room) return;
+    
+    // Clear the minimap canvas
+    minimapCx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+    
+    const cellSize = 20;
+    const mapW = state.map.W * cellSize;
+    const mapH = state.map.H * cellSize;
+    
+    // Center the map on the minimap canvas
+    const offsetX = (minimapCanvas.width - mapW) / 2;
+    const offsetY = (minimapCanvas.height - mapH) / 2;
+    
+    minimapCx.save();
+    
+    // Helper to check if a room should be visible
+    const isVisible = (c) => {
+      if(!c) return false;
+      // Show if visited
+      if(c.visited) return true;
+      // Show if adjacent to current room
+      if(!state.room) return false;
+      const dx = Math.abs(c.x - state.room.x);
+      const dy = Math.abs(c.y - state.room.y);
+      return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+    };
+    
     for(let gy=0; gy<state.map.H; gy++){
       for(let gx=0; gx<state.map.W; gx++){
-        const c = state.map.grid[gy][gx]; if(!c) continue; const rx=x+gx*cellSize, ry=y+gy*cellSize;
-        cx.fillStyle = c.type===RT.BOSS? '#f06c6c' : (c.type===RT.TREASURE? '#f5d76e' : (c.type===RT.START? '#a1cdfc' : '#9db0c7'));
-        cx.globalAlpha = c.visited? 1.0 : 0.35;
-        cx.fillRect(rx,ry,cellSize-1,cellSize-1);
-        if(state.room && c.x===state.room.x && c.y===state.room.y){ cx.globalAlpha=1; cx.strokeStyle='#ffffff'; cx.lineWidth=2; cx.strokeRect(rx-1,ry-1,cellSize+1,cellSize+1); }
+        const c = state.map.grid[gy][gx]; 
+        if(!c || !isVisible(c)) continue; 
+        const rx = offsetX + gx*cellSize;
+        const ry = offsetY + gy*cellSize;
+        
+        minimapCx.fillStyle = c.type===RT.BOSS? '#f06c6c' : (c.type===RT.TREASURE? '#f5d76e' : (c.type===RT.START? '#a1cdfc' : '#9db0c7'));
+        minimapCx.globalAlpha = c.visited? 1.0 : 0.5;
+        minimapCx.fillRect(rx, ry, cellSize-2, cellSize-2);
+        
+        if(state.room && c.x===state.room.x && c.y===state.room.y){ 
+          minimapCx.globalAlpha = 1; 
+          minimapCx.strokeStyle = '#ffffff'; 
+          minimapCx.lineWidth = 3; 
+          minimapCx.strokeRect(rx-1, ry-1, cellSize, cellSize); 
+        }
       }
     }
-    cx.restore();
+    minimapCx.restore();
   }
 
   function lineCircle(x1,y1,x2,y2,cx0,cy0,r){
@@ -514,7 +579,29 @@ import { makeEnemy, spawnCombatWave, spawnBoss, explode, onEnemyDie } from './en
   function outOfRoom(x,y){ return x<ROOM_ORIGIN.x || x>ROOM_ORIGIN.x+ROOM_W || y<ROOM_ORIGIN.y || y>ROOM_ORIGIN.y+ROOM_H; }
   function confineToRoom(o){ o.x = clamp(o.x, ROOM_ORIGIN.x+10, ROOM_ORIGIN.x+ROOM_W-10); o.y = clamp(o.y, ROOM_ORIGIN.y+10, ROOM_ORIGIN.y+ROOM_H-10); }
 
-  function updateHUD(){ const p = state.player; if(!p) return; const rt = state.room? state.room.type : '—'; const label = rt===RT.START?'Start': rt===RT.TREASURE?'Treasure': rt===RT.BOSS?'Boss':'Combat'; if(HUD.hearts) HUD.hearts.textContent = '❤'.repeat(p.hearts) + ' '.repeat(Math.max(0,p.maxHearts-p.hearts)); if(HUD.ammo) HUD.ammo.textContent = `${p.ammo} / ${p.clipSize}`; if(HUD.level) HUD.level.textContent = `Floor ${state.floor} — ${label}`; if(HUD.score) HUD.score.textContent = `Score ${state.score}`; }
+  function updateHUD(){ 
+    const p = state.player; 
+    if(!p) return; 
+    const rt = state.room? state.room.type : '—'; 
+    const label = rt===RT.START?'Start': rt===RT.TREASURE?'Treasure': rt===RT.BOSS?'Boss':'Combat'; 
+    if(HUD.hearts) HUD.hearts.textContent = '❤'.repeat(p.hearts) + ' '.repeat(Math.max(0,p.maxHearts-p.hearts)); 
+    if(HUD.ammo) HUD.ammo.textContent = `${p.ammo} / ${p.clipSize}`; 
+    if(HUD.level) HUD.level.textContent = `Floor ${state.floor} — ${label}`; 
+    if(HUD.score) HUD.score.textContent = `Score ${state.score}`;
+    
+    // Update item list
+    if(HUD.itemListContent && p.items) {
+      if(p.items.length === 0) {
+        HUD.itemListContent.innerHTML = '<div style="color:#9db0c7;font-size:12px;font-style:italic;">No items yet</div>';
+      } else {
+        HUD.itemListContent.innerHTML = p.items.map(itemId => {
+          const itemData = ItemPoolMaster.find(item => item.id === itemId);
+          if(!itemData) return '';
+          return `<div class="itemEntry"><div class="itemName">${itemData.name}</div><div class="itemDesc">${itemData.desc}</div></div>`;
+        }).filter(s => s).join('');
+      }
+    }
+  }
 
   let last=performance.now();
   function loop(t){ const dt = clamp(t-last, 0, 40); last=t; if(!state.idle && !state.dead && !state.win){ try { update(dt); tryChangeRoom(); } catch(err){ console.error('Update error:', err); } }

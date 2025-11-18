@@ -10,15 +10,15 @@ export function applyTier(e, level){
 
 export function makeEnemy(kind,x,y, level){
   let e;
-  if(kind==='ghoul')   e = {type:'enemy', etype:'ghoul',   sprite:'ghoul',   x,y, r:12, hp:2+Math.floor(level/2), speed:1.7+level*0.04, t:0};
-  else if(kind==='archer') e = {type:'enemy', etype:'archer', sprite:'archer', x,y, r:13, hp:3+Math.floor(level/2), speed:1.2+level*0.03, t:0, shootCD:randInt(700,1100)};
+  if(kind==='ghoul')   e = {type:'enemy', etype:'ghoul',   sprite:'ghoul',   x,y, r:18, hp:2+Math.floor(level/2), speed:1.7+level*0.04, t:0};
+  else if(kind==='archer') e = {type:'enemy', etype:'archer', sprite:'archer', x,y, r:18, hp:3+Math.floor(level/2), speed:1.2+level*0.03, t:0, shootCD:randInt(700,1100)};
   else if(kind==='turret') e = {type:'enemy', etype:'turret', sprite:'turret', x,y, r:14, hp:4+Math.floor(level/1.5), speed:0, t:0, shootCD:800};
   else if(kind==='charger')e = {type:'enemy', etype:'charger',sprite:'charger',x,y, r:13, hp:3+Math.floor(level/2), speed:1.0+level*0.02, t:0, dashCD:1400, dashT:0, vx:0, vy:0};
   else if(kind==='warlock')e = {type:'enemy', etype:'warlock', sprite:'warlock',x,y, r:14, hp:5+Math.floor(level/2), speed:0.9+level*0.02, t:0, shootCD:650};
   else if(kind==='sniper') e = {type:'enemy', etype:'sniper', sprite:'sniper', x,y, r:12, hp:3+Math.floor(level/2), speed:1.0+level*0.02, t:0, shootCD:1400};
   else if(kind==='bomber') e = {type:'enemy', etype:'bomber', sprite:'bomber', x,y, r:12, hp:2+Math.floor(level/3), speed:1.6+level*0.03, t:0, fuse:0};
   else if(kind==='boss')   e = {type:'enemy', etype:'boss',   sprite:'boss',   x,y, r:24, hp: 80 + level*20, speed:0.8+level*0.02, t:0, phase:0, shootCD:700};
-  else e = {type:'enemy', etype:'ghoul', sprite:'ghoul', x,y, r:12, hp:3, speed:1.5, t:0};
+  else e = {type:'enemy', etype:'ghoul', sprite:'ghoul', x,y, r:18, hp:3, speed:1.5, t:0};
   return applyTier(e, level);
 }
 
