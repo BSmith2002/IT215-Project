@@ -30,7 +30,101 @@ import { makeEnemy, spawnCombatWave, spawnBoss, explode, onEnemyDie } from './en
   const restartBtn = document.getElementById('restartBtn');
   const title = document.getElementById('title');
   const subtitle = document.getElementById('subtitle');
+  const volumeBtn = document.getElementById('volumeBtn');
+  const audioPanel = document.getElementById('audioPanel');
+  const soundtrack = document.getElementById('soundtrack');
+  const volumeSlider = document.getElementById('volumeSlider');
+  const muteBtn = document.getElementById('muteBtn');
+  let lastVolume = volumeSlider ? (Number(volumeSlider.value)||70) : 70;
   function showOverlay(show){ overlay.hidden = !show; overlay.style.display = show ? 'grid':'none'; }
+
+  function updateMuteButton(){
+    if(!muteBtn) return;
+    const muted = soundtrack ? soundtrack.muted : false;
+    muteBtn.textContent = muted ? 'Unmute' : 'Mute';
+  }
+  function syncAudioControls(){
+    if(soundtrack && volumeSlider){
+      const sliderVal = Math.round(soundtrack.volume * 100);
+      if(!Number.isNaN(sliderVal)){
+        volumeSlider.value = sliderVal;
+        if(sliderVal>0){ lastVolume = sliderVal; }
+      }
+    }
+    updateMuteButton();
+  }
+  function setAudioPanelVisibility(show){
+    if(!audioPanel) return;
+    audioPanel.hidden = !show;
+    audioPanel.style.display = show ? 'flex' : 'none';
+    if(volumeBtn){
+      volumeBtn.textContent = show ? 'Hide Volume Settings' : 'Volume Settings';
+    }
+    if(show){ syncAudioControls(); }
+  }
+  if(volumeBtn && audioPanel){
+    volumeBtn.addEventListener('click', ()=>{ setAudioPanelVisibility(audioPanel.hidden); });
+  }
+  if(audioPanel){
+    audioPanel.hidden = true;
+    audioPanel.style.display = 'none';
+  }
+  if(soundtrack && volumeSlider){
+    const pct = clamp(Number(volumeSlider.value)||70, 0, 100);
+    soundtrack.volume = pct/100;
+    lastVolume = pct;
+  }
+  if(volumeSlider && soundtrack){
+    volumeSlider.addEventListener('input', ()=>{
+      const pct = clamp(Number(volumeSlider.value)||0, 0, 100);
+      const vol = pct/100;
+      soundtrack.volume = vol;
+      if(vol>0){
+        lastVolume = pct;
+        soundtrack.muted = false;
+      }
+      updateMuteButton();
+    });
+  }
+  if(muteBtn){
+    muteBtn.addEventListener('click', ()=>{
+      if(!soundtrack) return;
+      if(soundtrack.muted){
+        soundtrack.muted = false;
+        if(volumeSlider){
+          let pct = Number(volumeSlider.value)||0;
+          if(pct===0){
+            pct = lastVolume || 50;
+            volumeSlider.value = pct;
+            soundtrack.volume = pct/100;
+          }
+        } else if(soundtrack.volume===0){
+          soundtrack.volume = (lastVolume||50)/100;
+        }
+      } else {
+        soundtrack.muted = true;
+        if(volumeSlider){
+          const pct = Number(volumeSlider.value)||0;
+          if(pct>0){ lastVolume = pct; }
+        }
+      }
+      updateMuteButton();
+    });
+  }
+
+  function playSoundtrack(){
+    if(!soundtrack) return;
+    soundtrack.loop = true;
+    const playPromise = soundtrack.play();
+    if(playPromise && typeof playPromise.catch === 'function'){
+      playPromise.catch(err=>console.warn('Soundtrack playback blocked:', err));
+    }
+  }
+  function stopSoundtrack(){
+    if(!soundtrack) return;
+    soundtrack.pause();
+    soundtrack.currentTime = 0;
+  }
 
   // ===== Asset Loader (PNG sprites) =====
   // Place files in /assets/ with these names (change paths if you like).
@@ -233,9 +327,13 @@ import { makeEnemy, spawnCombatWave, spawnBoss, explode, onEnemyDie } from './en
     const startCell = state.map.grid[state.map.sy][state.map.sx];
     enterRoom(startCell);
     updateHUD();
+    playSoundtrack();
   }
 
-  function endRun(text){ showOverlay(true); title.textContent=text; subtitle.textContent=`Score ${state.score} — Reached Floor ${state.floor}`; restartBtn.hidden=false; startBtn.hidden=true; }
+  function endRun(text){
+    showOverlay(true); title.textContent=text; subtitle.textContent=`Score ${state.score} — Reached Floor ${state.floor}`; restartBtn.hidden=false; startBtn.hidden=true;
+    stopSoundtrack();
+  }
 
   startBtn.addEventListener('click', (e)=>{ e.preventDefault(); newRun(); });
   restartBtn.addEventListener('click', (e)=>{ e.preventDefault(); newRun(); });
