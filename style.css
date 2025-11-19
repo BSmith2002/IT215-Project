@@ -7,6 +7,7 @@ canvas { background: radial-gradient(1200px 800px at 50% 50%, #18202b 0%, #0d121
 #hud .topRight { position:absolute; top:12px; right:12px; display:flex; flex-direction:column; gap:14px; align-items:flex-end; }
 #hud .bottomLeft { position:absolute; bottom:12px; left:12px; display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
 #hud .pill { background:#111827cc; border:1px solid #243142; padding:8px 12px; border-radius:999px; font-weight:600; letter-spacing:.3px; }
+#hud .volume-btn { pointer-events:auto; z-index:30; }
 #hud .ammo { min-width:120px; text-align:center; }
 #hud .level { min-width:160px; text-align:center; }
 #hud .reloadBar { position:relative; width:140px; height:10px; background:#111827; border:1px solid #243142; border-radius:999px; overflow:hidden; }
@@ -27,3 +28,10 @@ kbd { background:#111827; border:1px solid #243142; border-bottom-width:2px; bor
 button { pointer-events:auto; cursor:pointer; border:1px solid #3a4d63; background:#152131; color:#e8eef7; padding:10px 14px; border-radius:12px; font-weight:700; }
 button:hover { filter:brightness(1.1); }
 a { color:#a1cdfc; }
+.audio-settings { position:fixed; top:120px; right:20px; width:280px; pointer-events:auto; display:flex; flex-direction:column; gap:10px; z-index:20; }
+.audio-panel-header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.audio-panel-header .small { padding:6px 12px; font-size:13px; }
+.volume-label { display:flex; flex-direction:column; gap:6px; font-weight:600; }
+.volume-label input[type=range] { width:100%; accent-color:#a1cdfc; cursor:pointer; }
+.audio-note { color:#9db0c7; font-size:13px; }
+#audioPanel audio { display:none; }

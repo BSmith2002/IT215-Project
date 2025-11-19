@@ -24,6 +24,7 @@
     <div class="topRight">
       <div class="pill level" id="level">Floor 1 — Start</div>
       <canvas id="minimap" width="160" height="160"></canvas>
+      <button id="volumeBtn" class="pill volume-btn" type="button">Volume Settings</button>
     </div>
     <div class="bottomLeft">
       <div class="pill ammo" id="ammo">6 / 6</div>
@@ -48,6 +49,22 @@
       </div>
       <p class="muted" style="margin-top:8px">Each floor: find the <b>Boss Room</b> (red), defeat the boss to descend. Treasure rooms (yellow, 1–2/floor) grant named items with synergies.</p>
     </div>
+  </div>
+
+  <div id="audioPanel" class="pill audio-settings" hidden>
+    <div class="audio-panel-header">
+      <strong>Soundtrack</strong>
+      <button id="muteBtn" type="button" class="pill small volume-btn">Mute</button>
+    </div>
+    <label class="volume-label" for="volumeSlider">
+      Volume
+      <input type="range" id="volumeSlider" min="0" max="100" value="70">
+    </label>
+    
+    <audio id="soundtrack" loop preload="auto">
+      <source src="./assets/soundtrack.mp4" type="audio/mp4">
+      Your browser does not support MP4 audio playback.
+    </audio>
   </div>
 
   <!-- Load the game as an ES module so imports inside main.js work -->
