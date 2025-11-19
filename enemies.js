@@ -12,7 +12,7 @@ export function makeEnemy(kind,x,y, level){
   let e;
   if(kind==='ghoul')   e = {type:'enemy', etype:'ghoul',   sprite:'ghoul',   x,y, r:18, hp:2+Math.floor(level/2), speed:2.0+level*0.05, t:0};
   else if(kind==='archer') e = {type:'enemy', etype:'archer', sprite:'archer', x,y, r:18, hp:3+Math.floor(level/2), speed:1.4+level*0.04, t:0, shootCD:randInt(1000,1500)};
-  else if(kind==='turret') e = {type:'enemy', etype:'turret', sprite:'turret', x,y, r:18, hp:4+Math.floor(level/1.5), speed:0, t:0, shootCD:1200};
+  else if(kind==='turret') e = {type:'enemy', etype:'turret', sprite:'turret', x,y, r:18, hp:4+Math.floor(level/1.5), speed:0, t:0, shootCD:2400};
   else if(kind==='charger')e = {type:'enemy', etype:'charger',sprite:'charger',x,y, r:28, hp:3+Math.floor(level/2), speed:1.2+level*0.025, t:0, dashCD:1400, dashT:0, vx:0, vy:0};
   else if(kind==='warlock')e = {type:'enemy', etype:'warlock', sprite:'warlock',x,y, r:14, hp:5+Math.floor(level/2), speed:1.1+level*0.025, t:0, shootCD:1000};
   else if(kind==='sniper') e = {type:'enemy', etype:'sniper', sprite:'sniper', x,y, r:12, hp:3+Math.floor(level/2), speed:1.2+level*0.025, t:0, shootCD:2000};
@@ -41,10 +41,19 @@ export function spawnCombatWave(state, randomRoomEdgePoint){
   const tier = Math.floor((state.floor-1)/3);
   const n = 5 + Math.floor(state.floor*1.2) + randInt(0,3) + tier;
   for(let i=0;i<n;i++){
-    const base = ['ghoul','archer','turret','charger'];
+    const base = ['ghoul','archer','charger'];
+    const lessCommon = ['turret'];
     const extra = state.floor>=3 ? ['warlock','sniper','bomber'] : [];
-    const pool = base.concat(extra);
-    const kind = pool[(Math.random()*pool.length)|0];
+    
+    // 70% chance for base enemies, 30% chance for turret
+    let kind;
+    if(Math.random() < 0.7) {
+      const pool = base.concat(extra);
+      kind = pool[(Math.random()*pool.length)|0];
+    } else {
+      kind = 'turret';
+    }
+    
     const pos = randomRoomEdgePoint();
     state.entities.push(makeEnemy(kind,pos.x,pos.y,state.floor));
   }
